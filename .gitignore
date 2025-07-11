@@ -1,0 +1,16 @@
+
+# Python specific
+__pycache__/
+
+# Conda environments
+.conda/
+.env/
+*.log
+
+# OS generated files
+.DS_Store 
+*/.DS_Store 
+.Trashes 
+
+*.p
+Images/678903.png
