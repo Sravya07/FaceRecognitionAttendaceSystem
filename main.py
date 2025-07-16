@@ -1,7 +1,9 @@
+from datetime import datetime
 import pickle
 import cv2
 import os
 
+import cvzone
 import face_recognition
 import numpy as np
 
@@ -67,139 +69,165 @@ while True:
     )
     imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[modeType]
 
-    for encodedFace, faceLocation in zip(encodeCurFrame, faceCurFrame):
-        matches = face_recognition.compare_faces(encodingsKnown, encodedFace)
-        faceDistance = face_recognition.face_distance(encodingsKnown, encodedFace)
+    if faceCurFrame:
+        for encodedFace, faceLocation in zip(encodeCurFrame, faceCurFrame):
+            matches = face_recognition.compare_faces(encodingsKnown, encodedFace)
+            faceDistance = face_recognition.face_distance(encodingsKnown, encodedFace)
 
-        # print("matches", matches)
-        # print("Face Distance", faceDistance)
+            # print("matches", matches)
+            # print("Face Distance", faceDistance)
 
-        matchIdx = np.argmin(faceDistance)
-        # print("Match Index", matchIdx)
+            matchIdx = np.argmin(faceDistance)
+            # print("Match Index", matchIdx)
 
-        if matches[matchIdx]:
-            # print("Known Face Detected - userId", userIds[matchIdx])
-            y1, x2, y2, x1 = faceLocation
-            y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
+            if matches[matchIdx]:
+                # print("Known Face Detected - userId", userIds[matchIdx])
+                y1, x2, y2, x1 = faceLocation
+                y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
 
-            bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1  # Bounding Box
+                bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1  # Bounding Box
 
-            x, y, w, h = bbox
-            start_point = (x, y)
-            end_point = (x + w, y + h)
-            bbox_color = (0, 0, 255)
-            bbox_thickness = 2
+                x, y, w, h = bbox
+                start_point = (x, y)
+                end_point = (x + w, y + h)
+                bbox_color = (0, 0, 255)
+                bbox_thickness = 2
 
-            imgBackground = cv2.rectangle(
-                imgBackground, start_point, end_point, bbox_color, bbox_thickness
-            )
+                imgBackground = cv2.rectangle(
+                    imgBackground, start_point, end_point, bbox_color, bbox_thickness
+                )
 
-            id = userIds[matchIdx]
+                id = userIds[matchIdx]
 
-            if counter == 0:
-                counter = 1
-                modeType = 1
+                if counter == 0:
+                    # cvzone.putTextRect(imgBackground, "Loading..", (275, 400))
+                    # cv2.imshow("Face Attendance", imgBackground)
+                    # cv2.waitKey(1) 
+                    counter = 1
+                    modeType = 1
 
-    if counter != 0:
+        if counter != 0:
 
-        if counter == 1:
+            if counter == 1:
 
-            # Create a db reference for CRUD
-            ref = db.reference(f"Users/{id}")
+                # Create a db reference for CRUD
+                ref = db.reference(f"Users/{id}")
 
-            # Get data
-            userInfo = ref.get()
-            print(userInfo)
+                # Get data
+                userInfo = ref.get()
+                print(userInfo)
 
-            # Get image from storage
-            blob = bucket.get_blob(f"Images/{id}.png")
-            array = np.frombuffer(blob.download_as_string(), np.uint8)
-            imgUser = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
+                # Get image from storage
+                blob = bucket.get_blob(f"Images/{id}.png")
+                array = np.frombuffer(blob.download_as_string(), np.uint8)
+                imgUser = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
 
-            # Update user data
-            userInfo["total_attendance"] += 1
-            ref.child("total_attendance").set(userInfo["total_attendance"])
+                # Update user data
+                datetimeObj = datetime.strptime(
+                    userInfo["last_attendance_time"], "%Y-%m-%d %H:%M:%S"
+                )
 
-        if counter > 10 and counter <= 20:
-            modeType = 2
-        imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[modeType]
+                timeElapsed = (datetime.now() - datetimeObj).total_seconds()
+                print("time Elapsed: ", timeElapsed)
 
-        if counter >= 10:
+                if timeElapsed > 30:
+                    userInfo["total_attendance"] += 1
+                    ref.child("total_attendance").set(userInfo["total_attendance"])
+                    ref.child("last_attendance_time").set(
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    )
+                else:
+                    modeType = 0
+                    counter = 0
+                    imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[
+                        modeType
+                    ]
 
-            cv2.putText(
-                imgBackground,
-                str(userInfo["total_attendance"]),
-                (861, 125),
-                cv2.FONT_HERSHEY_COMPLEX,
-                1,
-                (255, 255, 255),
-                1,
-            )
+            if modeType != 0:
 
-            (w, h), _ = cv2.getTextSize(
-                userInfo["name"], cv2.FONT_HERSHEY_COMPLEX, 1, 1
-            )
-            offset = (414 - w) // 2
-            cv2.putText(
-                imgBackground,
-                str(userInfo["name"]),
-                (808 + offset, 445),
-                cv2.FONT_HERSHEY_COMPLEX,
-                1,
-                (50, 50, 50),
-                1,
-            )
+                if counter > 10 and counter <= 20:
+                    modeType = 2
+                imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[modeType]
 
-            cv2.putText(
-                imgBackground,
-                str(userInfo["dept"]),
-                (1006, 550),
-                cv2.FONT_HERSHEY_COMPLEX,
-                0.5,
-                (255, 255, 255),
-                1,
-            )
-            cv2.putText(
-                imgBackground,
-                str(id),
-                (1006, 493),
-                cv2.FONT_HERSHEY_COMPLEX,
-                0.5,
-                (255, 255, 255),
-                1,
-            )
-            cv2.putText(
-                imgBackground,
-                str(userInfo["level"]),
-                (910, 625),
-                cv2.FONT_HERSHEY_COMPLEX,
-                0.6,
-                (100, 100, 100),
-                1,
-            )
-            cv2.putText(
-                imgBackground,
-                str(userInfo["start_date"]),
-                (1125, 625),
-                cv2.FONT_HERSHEY_COMPLEX,
-                0.6,
-                (100, 100, 100),
-                1,
-            )
+                if counter <= 10:
 
-            imgBackground[175 : 175 + 216, 909 : 909 + 216] = cv2.resize(
-                imgUser, (216, 216)
-            )
+                    cv2.putText(
+                        imgBackground,
+                        str(userInfo["total_attendance"]),
+                        (861, 125),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        1,
+                        (255, 255, 255),
+                        1,
+                    )
 
-        counter += 1
+                    (w, h), _ = cv2.getTextSize(
+                        userInfo["name"], cv2.FONT_HERSHEY_COMPLEX, 1, 1
+                    )
+                    offset = (414 - w) // 2
+                    cv2.putText(
+                        imgBackground,
+                        str(userInfo["name"]),
+                        (808 + offset, 445),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        1,
+                        (50, 50, 50),
+                        1,
+                    )
 
-        if counter > 20:
+                    cv2.putText(
+                        imgBackground,
+                        str(userInfo["dept"]),
+                        (1006, 550),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        0.5,
+                        (255, 255, 255),
+                        1,
+                    )
+                    cv2.putText(
+                        imgBackground,
+                        str(id),
+                        (1006, 493),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        0.5,
+                        (255, 255, 255),
+                        1,
+                    )
+                    cv2.putText(
+                        imgBackground,
+                        str(userInfo["level"]),
+                        (910, 625),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        0.6,
+                        (100, 100, 100),
+                        1,
+                    )
+                    cv2.putText(
+                        imgBackground,
+                        str(userInfo["start_date"]),
+                        (1125, 625),
+                        cv2.FONT_HERSHEY_COMPLEX,
+                        0.6,
+                        (100, 100, 100),
+                        1,
+                    )
 
-            counter = 0
-            modeType = 3
-            userInfo = []
-            imgUser = []
-            imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[modeType]
+                    imgBackground[175 : 175 + 216, 909 : 909 + 216] = cv2.resize(
+                        imgUser, (216, 216)
+                    )
+
+            counter += 1
+
+            if counter > 20:
+
+                counter = 0
+                modeType = 3
+                userInfo = []
+                imgUser = []
+                imgBackground[44 : 44 + 633, 808 : 808 + 414] = imgModeList[modeType]
+    else:
+        modeType = 3
+        counter = 0
 
     # Show webcam feed
     cv2.imshow("Face Attendance", imgBackground)
