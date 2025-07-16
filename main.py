@@ -102,7 +102,7 @@ while True:
                 if counter == 0:
                     # cvzone.putTextRect(imgBackground, "Loading..", (275, 400))
                     # cv2.imshow("Face Attendance", imgBackground)
-                    # cv2.waitKey(1) 
+                    # cv2.waitKey(1)
                     counter = 1
                     modeType = 1
 

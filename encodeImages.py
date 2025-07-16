@@ -4,7 +4,7 @@ import os
 import pickle
 
 # importing user images
-folderPath = 'Images'
+folderPath = "Images"
 pathList = os.listdir(folderPath)
 # print(pathList)
 imgList = []
@@ -19,6 +19,7 @@ for path in pathList:
 
 print(userIds)
 
+
 def findEncodings(imagesList):
     encodings = []
     for img in imagesList:
@@ -28,6 +29,7 @@ def findEncodings(imagesList):
 
     return encodings
 
+
 print("Encoding images.. ")
 encodingsKnown = findEncodings(imgList)
 encodingsKnownWithIds = [encodingsKnown, userIds]
@@ -36,7 +38,7 @@ print("Encoding complete")
 # cv2.imencode('Images/')
 
 print("Saving encoded images in a pickle file..")
-file = open("encodeFile.p", 'wb')
-pickle.dump(encodingsKnownWithIds,file)
+file = open("encodeFile.p", "wb")
+pickle.dump(encodingsKnownWithIds, file)
 file.close()
 print("Encodings saved")
