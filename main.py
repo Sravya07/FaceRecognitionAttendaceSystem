@@ -99,16 +99,21 @@ while True:
 
         if counter == 1:
 
-            #Get data
-            userInfo = db.reference(f'Users/{id}').get()
+            # Create a db reference for CRUD
+            ref = db.reference(f'Users/{id}')
+
+            # Get data
+            userInfo = ref.get()
             print(userInfo)
 
-            #Get image from storage
+            # Get image from storage
             blob = bucket.get_blob(f'Images/{id}.png')
             array = np.frombuffer(blob.download_as_string(), np.uint8)
             imgUser = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
 
-
+            # Update user data 
+            userInfo['total_attendance'] += 1
+            ref.child('total_attendance').set(userInfo['total_attendance'])
 
 
         cv2.putText(imgBackground, str(userInfo['total_attendance']), (861,125),
