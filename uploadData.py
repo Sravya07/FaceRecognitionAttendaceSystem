@@ -23,7 +23,7 @@ data = {
         "name" : "Tom Cruise",
         "dept" : "Mechanics",
         "start_date" : "2015-1-22",
-        "total_attendance" : 13,
+        "total_attendance" : 9,
         "level" : 3,
         "title" : "Aircraft mechanic",
         "last_attendance_time" : "2023-02-18 01:45:36"
@@ -32,7 +32,7 @@ data = {
         "name" : "Sravya Somi",
         "dept" : "Tech",
         "start_date" : "2020-11-14",
-        "total_attendance" : 7,
+        "total_attendance" : 13,
         "level" : 4,
         "title" : "Software Dev Engineer",
         "last_attendance_time" : "2024-03-11 10:16:56"
@@ -57,5 +57,8 @@ data = {
     }
 }
 
+print("Uploading user data to db..")
 for key, value in data.items():
     ref.child(key).set(value)
+
+print("Data uploaded successfully")

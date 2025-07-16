@@ -11,12 +11,13 @@ imgList = []
 userIds = []
 
 for path in pathList:
+    # imgList.append(cv2.resize(cv2.imread(os.path.join(folderPath, path)), (216, 216)))
     imgList.append(cv2.imread(os.path.join(folderPath, path)))
+
     userIds.append(os.path.splitext(path)[0])
     # print(os.path.splitext(path)[0])
 
 print(userIds)
-
 
 def findEncodings(imagesList):
     encodings = []
@@ -34,6 +35,7 @@ print("Encoding complete")
 
 # cv2.imencode('Images/')
 
+print("Saving encoded images in a pickle file..")
 file = open("encodeFile.p", 'wb')
 pickle.dump(encodingsKnownWithIds,file)
 file.close()
